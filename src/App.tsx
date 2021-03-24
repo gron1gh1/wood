@@ -1,24 +1,15 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import { Button, FormControl,FormLabel ,Input} from "@chakra-ui/react"
 
 function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div style={{display:'flex',justifyContent:'center',alignItems:'center',height:'100vh'}}>
+    <FormControl id='login' style={{width:'500px'}}>
+      <FormLabel>Email</FormLabel>
+      <Input type='email' placeholder='Email'></Input> 
+      <FormLabel>Password</FormLabel>
+      <Input type='password' placeholder='Password'></Input> 
+      <Button style={{marginTop:'10px'}}width="500px" colorScheme="teal" type="submit">Login</Button>
+    </FormControl>
     </div>
   );
 }
