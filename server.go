@@ -16,29 +16,58 @@ const (
 	DB_NAME     = "wood"
 )
 
-func main() {
+type WoodDB struct {
+	db *sql.DB
+}
 
-	db, err := sql.Open("postgres", fmt.Sprintf("user=wood password=%s sslmode=disable", os.Args[1]))
-	if err != nil {
-		panic(err)
-	}
-	defer db.Close()
+func (wood *WoodDB) Open(host string, port int, user string, password string, dbname string) error {
+	var err error
+	wood.db, err = sql.Open("postgres", fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", host, port, user, password, dbname))
+	return err
+}
 
-	rows, err := db.Query("SELECT id,username FROM account")
-	if err != nil {
-		panic(err)
-	}
-	defer rows.Close()
+func (wood *WoodDB) Close() {
+	wood.db.Close()
+}
 
+func (wood *WoodDB) Login(username string, password string) bool {
 	var id int
-	var username string
-	for rows.Next() {
-		err := rows.Scan(&id, &username)
-		if err != nil {
-			panic(err)
-		}
-		fmt.Println(id, username)
+	_ = wood.db.QueryRow("SELECT id FROM account WHERE username=$1 AND password=$2",
+		username,
+		password).Scan(&id)
+	if id == 0 {
+		return false
 	}
+	return true
+}
+
+func main() {
+	woodDB := WoodDB{}
+	err := woodDB.Open("localhost", 5432, "wood", os.Args[1], "wood")
+	defer woodDB.Close()
+	if err != nil {
+		panic(err)
+	}
+	if woodDB.Login("gron1gh1", "") == true {
+		fmt.Printf("로그인 성공")
+	} else {
+		fmt.Printf("로그인 실패")
+	}
+	// rows, err := woodDB.db.Query("SELECT id,username FROM account")
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// defer rows.Close()
+
+	// var id int
+	// var username string
+	// for rows.Next() {
+	// 	err := rows.Scan(&id, &username)
+	// 	if err != nil {
+	// 		panic(err)
+	// 	}
+	// 	fmt.Println(id, username)
+	// }
 
 	e := echo.New()
 
