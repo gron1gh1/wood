@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"time"
 
+	"github.com/dgrijalva/jwt-go"
 	"github.com/labstack/echo"
 	_ "github.com/lib/pq"
 )
@@ -18,6 +20,11 @@ const (
 
 type WoodDB struct {
 	db *sql.DB
+}
+
+type Claims struct {
+	UserNo int
+	jwt.StandardClaims
 }
 
 func (wood *WoodDB) Open(host string, port int, user string, password string, dbname string) error {
@@ -41,6 +48,23 @@ func (wood *WoodDB) Login(username string, password string) bool {
 	return true
 }
 
+func (wood *WoodDB) GetJwtToken() (string, error) {
+	timeOut := time.Now().Add(5 * time.Minute)
+	claims := &Claims{
+		StandardClaims: jwt.StandardClaims{
+			ExpiresAt: timeOut.Unix(),
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, err := token.SignedString([]byte("hello"))
+	if err != nil {
+		return "", fmt.Errorf("token signed Error")
+	} else {
+		return tokenString, nil
+	}
+}
+
 func main() {
 	woodDB := WoodDB{}
 	err := woodDB.Open("localhost", 5432, "wood", os.Args[1], "wood")
@@ -48,11 +72,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	if woodDB.Login("gron1gh1", "") == true {
-		fmt.Printf("로그인 성공")
-	} else {
-		fmt.Printf("로그인 실패")
-	}
+
 	// rows, err := woodDB.db.Query("SELECT id,username FROM account")
 	// if err != nil {
 	// 	panic(err)
@@ -80,7 +100,26 @@ func main() {
 	})
 
 	e.POST("/login", func(c echo.Context) error {
-		return c.String(http.StatusOK, "Hello World")
+		username := c.FormValue("username")
+		password := c.FormValue("password")
+		if woodDB.Login(username, password) == true {
+			jwtToken, _ := woodDB.GetJwtToken()
+			c.Response().Header().Set("Cache-Control", "no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0")
+			c.Response().Header().Set("Last-Modified", time.Now().String())
+			c.Response().Header().Set("Pragma", "no-cache")
+			c.Response().Header().Set("Expires", "-1")
+			c.SetCookie(&http.Cookie{
+				Name:   "access-token",
+				Value:  jwtToken,
+				MaxAge: 1800,
+			})
+			mapD := map[string]interface{}{"isOK": true}
+			return c.JSON(http.StatusOK, mapD)
+
+		} else {
+			return c.String(http.StatusOK, "로그인 실패")
+		}
+
 	})
 
 	e.POST("/logout", func(c echo.Context) error {
