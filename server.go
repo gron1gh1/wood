@@ -117,7 +117,8 @@ func main() {
 			return c.JSON(http.StatusOK, mapD)
 
 		} else {
-			return c.String(http.StatusOK, "로그인 실패")
+			mapD := map[string]interface{}{"isOK": false}
+			return c.JSON(http.StatusOK, mapD)
 		}
 
 	})
